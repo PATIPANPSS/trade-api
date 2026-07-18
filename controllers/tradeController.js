@@ -3,14 +3,15 @@ const db = require("../config/db");
 const createTrade = async (req, res) => {
   try {
     const { symbol, entry_price, pattern } = req.body;
+    const user_id = req.user.userId;
 
     if(!symbol || !entry_price || entry_price <= 0 || !pattern){
         return res.status(400).json({ message: 'โปรดระบุข้อมูลให้ครบถ้วน และราคาต้องมากกว่า 0'})
     }
 
     const sql =
-      "INSERT INTO watchlist (symbol, entry_price, pattern) VALUES (?, ?, ?)";
-    const [result] = await db.query(sql, [symbol, entry_price, pattern]);
+      "INSERT INTO watchlist (symbol, entry_price, pattern, user_id) VALUES (?, ?, ?, ?)";
+    const [result] = await db.query(sql, [symbol, entry_price, pattern, user_id]);
 
 
     return res.status(201).json({
