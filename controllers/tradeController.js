@@ -5,14 +5,20 @@ const createTrade = async (req, res) => {
     const { symbol, entry_price, pattern } = req.body;
     const user_id = req.user.userId;
 
-    if(!symbol || !entry_price || entry_price <= 0 || !pattern){
-        return res.status(400).json({ message: 'โปรดระบุข้อมูลให้ครบถ้วน และราคาต้องมากกว่า 0'})
+    if (!symbol || !entry_price || entry_price <= 0 || !pattern) {
+      return res
+        .status(400)
+        .json({ message: "โปรดระบุข้อมูลให้ครบถ้วน และราคาต้องมากกว่า 0" });
     }
 
     const sql =
       "INSERT INTO watchlist (symbol, entry_price, pattern, user_id) VALUES (?, ?, ?, ?)";
-    const [result] = await db.query(sql, [symbol, entry_price, pattern, user_id]);
-
+    const [result] = await db.query(sql, [
+      symbol,
+      entry_price,
+      pattern,
+      user_id,
+    ]);
 
     return res.status(201).json({
       message: "เพิ่มแผนการเทรดสำเร็จ",
@@ -26,8 +32,11 @@ const createTrade = async (req, res) => {
 
 const getAllTrades = async (req, res) => {
   try {
-    const sql = "SELECT * FROM watchlist ORDER BY created_at DESC";
-    const [result] = await db.query(sql);
+    const user_id = req.user.userId;
+
+    const sql =
+      "SELECT * FROM watchlist WHERE user_id = ? ORDER BY created_at DESC";
+    const [result] = await db.query(sql, [user_id]);
 
     return res
       .status(200)
@@ -41,8 +50,10 @@ const getAllTrades = async (req, res) => {
 const getById = async (req, res) => {
   try {
     const tradeId = req.params.id;
-    const sql = "SELECT * FROM watchlist WHERE id = ?";
-    const [result] = await db.query(sql, [tradeId]);
+    const user_id = req.user.userId;
+
+    const sql = "SELECT * FROM watchlist WHERE id = ? AND user_id = ?";
+    const [result] = await db.query(sql, [tradeId, user_id]);
 
     if (result.length === 0) {
       return res.status(404).json({ message: "ไม่พบแผนการเทรดนี้" });
@@ -58,19 +69,23 @@ const getById = async (req, res) => {
 const updateTrade = async (req, res) => {
   try {
     const tradeId = req.params.id;
+    const user_id = req.user.userId;
     const { symbol, entry_price, pattern } = req.body;
 
-    if(!symbol || !entry_price || entry_price <= 0 || !pattern){
-        return res.status(400).json({ message: 'โปรดระบุข้อมูลให้ครบถ้วน และราคาต้องมากกว่า 0'})
+    if (!symbol || !entry_price || entry_price <= 0 || !pattern) {
+      return res
+        .status(400)
+        .json({ message: "โปรดระบุข้อมูลให้ครบถ้วน และราคาต้องมากกว่า 0" });
     }
-    
+
     const sql =
-      "UPDATE watchlist SET symbol = ?, entry_price = ?, pattern = ? WHERE id = ?";
+      "UPDATE watchlist SET symbol = ?, entry_price = ?, pattern = ? WHERE id = ? AND user_id = ?";
     const [result] = await db.query(sql, [
       symbol,
       entry_price,
       pattern,
       tradeId,
+      user_id,
     ]);
 
     if (result.affectedRows === 0) {
@@ -84,27 +99,29 @@ const updateTrade = async (req, res) => {
   }
 };
 
-const deleteTrade = async(req, res) => {
-    try{
-        const tradeId = req.params.id;
-        const sql = 'DELETE FROM watchlist WHERE id = ?';
-        const [result] = await db.query(sql, [tradeId]);
+const deleteTrade = async (req, res) => {
+  try {
+    const tradeId = req.params.id;
+    const user_id = req.user.userId;
 
-        if(result.affectedRows === 0){
-            return res.status(404).json({ message: 'ไม่พบแผนการเทรดนี้'});
-        }
+    const sql = "DELETE FROM watchlist WHERE id = ? AND user_id = ?";
+    const [result] = await db.query(sql, [tradeId, user_id]);
 
-        return res.status(200).json({ message: 'ลบสำเร็จ'});
-    }catch(error){
-        console.error(error);
-        return res.status(500).json({ message: "เกิดข้อผิดพลาดที่ Database"})
+    if (result.affectedRows === 0) {
+      return res.status(404).json({ message: "ไม่พบแผนการเทรดนี้" });
     }
-}
+
+    return res.status(200).json({ message: "ลบสำเร็จ" });
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json({ message: "เกิดข้อผิดพลาดที่ Database" });
+  }
+};
 
 module.exports = {
   createTrade,
   getAllTrades,
   getById,
   updateTrade,
-  deleteTrade
+  deleteTrade,
 };
