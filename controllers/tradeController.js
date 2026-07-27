@@ -33,18 +33,38 @@ const createTrade = async (req, res) => {
 const getAllTrades = async (req, res) => {
   try {
     const user_id = req.user.userId;
+    const search = req.query.search;
     const page = parseInt(req.query.page) || 1;
     const limit = parseInt(req.query.limit) || 10;
     const offset = (page - 1) * limit;
 
-    const countSql =
-      "SELECT COUNT(*) as totalItems FROM watchlist WHERE user_id = ?";
-    const [countRows] = await db.query(countSql, [user_id]);
+    let countSql = "";
+    let dataSql = "";
+    let countParams = [];
+    let dataParams = [];
+
+    if (!search) {
+      countSql =
+        "SELECT COUNT(*) as totalItems FROM watchlist WHERE user_id = ?";
+      countParams = [user_id];
+
+      dataSql =
+        "SELECT * FROM watchlist WHERE user_id = ? ORDER BY created_at DESC LIMIT ? OFFSET ?";
+      dataParams = [user_id, limit, offset];
+    } else {
+      countSql =
+        "SELECT COUNT(*) as totalItems FROM watchlist WHERE user_id = ? AND symbol LIKE ?";
+      countParams = [user_id, `%${search}%`];
+
+      dataSql =
+        "SELECT * FROM watchlist WHERE user_id = ? AND symbol LIKE ? ORDER BY created_at DESC LIMIT ? OFFSET ?";
+      dataParams = [user_id, `%${search}%`, limit, offset];
+    }
+
+    const [countRows] = await db.query(countSql, countParams);
     const totalItems = countRows[0].totalItems;
 
-    const sql =
-      "SELECT * FROM watchlist WHERE user_id = ? ORDER BY created_at DESC LIMIT ? OFFSET ?";
-    const [result] = await db.query(sql, [user_id, limit, offset]);
+    const [result] = await db.query(dataSql, dataParams);
 
     return res.status(200).json({
       success: true,
@@ -159,5 +179,5 @@ module.exports = {
   getById,
   updateTrade,
   deleteTrade,
-  getDashboardSummary
+  getDashboardSummary,
 };
