@@ -163,7 +163,7 @@ const getDashboardSummary = async (req, res) => {
     return res.status(200).json({
       success: true,
       data: {
-        totalTraeds: totalTrades,
+        totalTrades: totalTrades,
         totalInvestment: totalInvestment,
       },
     });
